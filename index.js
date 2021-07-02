@@ -1,7 +1,9 @@
 const express = require('express');
 const app = express();
 var fetch = require('sync-fetch');
-const { WebhookClient, Image } = require('dialogflow-fulfillment')
+const { WebhookClient, Image } = require('dialogflow-fulfillment');
+const { Context } = require('actions-on-google');
+
 const bodyParser = require('body-parser');
 
 app.use(bodyParser.json());
@@ -47,19 +49,44 @@ const dialogflowFulfillment = (request, response) => {
         let imageUrl = `http://image.tmdb.org/t/p/w185${data.results[0].poster_path}`;
         let detail = `Title:\n ${data.results[0].title}\n`;
         detail += `Overview:\n ${data.results[0].overview}`;
+
+        const movieContext = {
+            name: 'movie-id',
+            lifespan: 1,
+            parameters: {
+                id: data.results[0].id,
+                title: data.results[0].title
+            }
+        };
         
+        // Set output context for next intent use
+        agent.context.set(movieContext);
         agent.add(new Image(imageUrl));
         agent.add(detail);
+    }
+
+    const searchReview = (agent) => {
+        const movieId = agent.context.get('movie-id').parameters.id;
+        // console.log("search review");
+        // console.log(agent.context.get('movie-id'));
+        const url = `https://api.themoviedb.org/3/movie/${movieId}/reviews?api_key=${api_key}&language=en-US&page=1`;
+        let data = fetch(url).json();
+        
+        let response = `
+        Review from: ${data.results[0].author}\n\n\n
+        "${data.results[0].content}"`;
+
+        agent.add(response);
     }
 
     let intentMap = new Map();
     intentMap.set('Default Welcome Intent', sayHello);
     intentMap.set('Trending Movie', trendingMovie);
     intentMap.set('Movie Search', searchMovie);
+    intentMap.set("Movie Review", searchReview);
 
     agent.handleRequest(intentMap);
 }
 
 const PORT = process.env.PORT || 5000;
-
 app.listen(PORT, () => console.log("server started on port", PORT))
