@@ -1,7 +1,7 @@
 const express = require('express');
 const app = express();
 var fetch = require('sync-fetch');
-const { WebhookClient } = require('dialogflow-fulfillment')
+const { WebhookClient, Image } = require('dialogflow-fulfillment')
 const bodyParser = require('body-parser');
 
 app.use(bodyParser.json());
@@ -38,9 +38,24 @@ const dialogflowFulfillment = (request, response) => {
         agent.add(text); 
     }
 
+
+    const searchMovie = (agent) => {
+        const movieTitle = agent.parameters.movie[0];
+        const url = `https://api.themoviedb.org/3/search/movie?api_key=${api_key}&language=en-US&query=${movieTitle}&page=1&include_adult=false`;
+        let data = fetch(url).json();
+
+        let imageUrl = `http://image.tmdb.org/t/p/w185${data.results[0].poster_path}`;
+        let detail = `Title:\n ${data.results[0].title}\n`;
+        detail += `Overview:\n ${data.results[0].overview}`;
+        
+        agent.add(new Image(imageUrl));
+        agent.add(detail);
+    }
+
     let intentMap = new Map();
     intentMap.set('Default Welcome Intent', sayHello);
     intentMap.set('Trending Movie', trendingMovie);
+    intentMap.set('Movie Search', searchMovie);
 
     agent.handleRequest(intentMap);
 }
