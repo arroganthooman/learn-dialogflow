@@ -2,7 +2,6 @@ const express = require('express');
 const app = express();
 var fetch = require('sync-fetch');
 const { WebhookClient, Image } = require('dialogflow-fulfillment');
-const { Context } = require('actions-on-google');
 
 const bodyParser = require('body-parser');
 
@@ -67,8 +66,6 @@ const dialogflowFulfillment = (request, response) => {
 
     const searchReview = (agent) => {
         const movieId = agent.context.get('movie-id').parameters.id;
-        // console.log("search review");
-        // console.log(agent.context.get('movie-id'));
         const url = `https://api.themoviedb.org/3/movie/${movieId}/reviews?api_key=${api_key}&language=en-US&page=1`;
         let data = fetch(url).json();
         
